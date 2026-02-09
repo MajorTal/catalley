@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cat Alley</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav id="nav">
+    <span class="nav-title">Cat Alley</span>
+    <div class="nav-links">
+      <button class="nav-btn active" data-view="street">The Street</button>
+      <button class="nav-btn" data-view="alley">The Alley</button>
+    </div>
+    <span class="nav-stats" id="stats-display"></span>
+  </nav>
+
+  <div id="toast-container"></div>
+
+  <section id="view-street" class="view active">
+    <canvas id="street-canvas"></canvas>
+    <div id="your-cat-panel">
+      <h3>Your Cat</h3>
+      <canvas id="your-cat-canvas" width="96" height="96"></canvas>
+      <div id="your-cat-accessories"></div>
+      <input type="text" id="cat-name-input" placeholder="Name your cat..." maxlength="20">
+      <div class="panel-buttons">
+        <button id="save-cat-btn" class="btn btn-save">Save to The Alley</button>
+        <button id="new-cat-btn" class="btn btn-new">New Cat</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-alley" class="view">
+    <div id="alley-header">
+      <h2>The Alley</h2>
+      <p class="alley-subtitle">Your saved cats hang out here</p>
+    </div>
+    <div id="gallery-grid"></div>
+    <div id="gallery-empty">
+      <p>No cats here yet!</p>
+      <p class="hint">Go to The Street, click walking cats to steal their accessories, then save your creation.</p>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
