@@ -3,6 +3,7 @@
 import { loadState } from './state.js';
 import { startStreet, stopStreet, resumeStreet } from './cat-walker.js';
 import { renderGallery, initGalleryActions, updateStats } from './gallery.js';
+import { initMusic } from './music.js';
 
 // ===== Toast System =====
 export function showToast(message) {
@@ -52,6 +53,7 @@ function init() {
   startStreet();
   initGalleryActions();
   updateStats();
+  initMusic();
 }
 
 document.addEventListener('DOMContentLoaded', init);

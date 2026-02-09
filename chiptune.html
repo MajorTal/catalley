@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chiptune Generator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #1a1a2e; color: #0ff; font-family: monospace; padding: 24px; }
+        h1 { text-align: center; margin-bottom: 16px; font-size: 20px; }
+
+        .controls { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+        .panel { background: #16213e; border: 1px solid #0ff3; border-radius: 6px; padding: 12px; }
+        .panel h3 { font-size: 12px; margin-bottom: 8px; color: #0ff8; text-transform: uppercase; letter-spacing: 1px; }
+
+        .transport { display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 16px; }
+        .transport button { font-size: 16px; padding: 8px 20px; background: #0ff; color: #1a1a2e; border: none;
+                 cursor: pointer; font-family: monospace; font-weight: bold; border-radius: 4px; }
+        .transport button:hover { background: #0aa; }
+        .transport button.active { background: #0f8; }
+
+        .row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+        .row label { width: 60px; text-align: right; color: #0ff8; }
+        .row input[type=range] { flex: 1; accent-color: #0ff; max-width: 120px; }
+        .row select { background: #1a1a2e; color: #0ff; border: 1px solid #0ff5; padding: 2px 4px;
+                      font-family: monospace; font-size: 12px; border-radius: 3px; }
+        .row .val { width: 36px; text-align: left; font-size: 11px; color: #0ff8; }
+
+        .grid-wrap { text-align: center; }
+        .grid-wrap h3 { font-size: 12px; margin-bottom: 6px; color: #0ff8; text-transform: uppercase; letter-spacing: 1px; }
+        .grid-container { display: inline-flex; gap: 16px; }
+
+        .grid-section { display: flex; flex-direction: column; align-items: center; }
+        .grid-section .label { font-size: 10px; color: #0ff6; margin-bottom: 4px; text-transform: uppercase; }
+        .grid { display: grid; gap: 2px; }
+        .grid.melody-grid, .grid.bass-grid { grid-template-columns: repeat(16, 20px); }
+        .grid.drum-grid { grid-template-columns: repeat(16, 20px); }
+
+        .cell { width: 20px; height: 14px; background: #0ff1; border-radius: 2px; cursor: pointer; transition: background 0.1s; }
+        .cell:hover { background: #0ff3; }
+        .cell.on { background: #0ff; }
+        .cell.on-bass { background: #f0a; }
+        .cell.on-kick { background: #ff0; }
+        .cell.on-snare { background: #f80; }
+        .cell.beat-marker { border-bottom: 1px solid #0ff3; }
+        .cell.playing { box-shadow: 0 0 6px #fff; }
+
+        .note-labels { display: flex; flex-direction: column; gap: 2px; margin-right: 4px; justify-content: flex-start; }
+        .note-label { height: 14px; font-size: 9px; color: #0ff5; display: flex; align-items: center; justify-content: flex-end; }
+
+        .grid-row { display: flex; align-items: flex-start; }
+
+        .key-select { display: flex; gap: 8px; align-items: center; justify-content: center; margin: 8px 0; font-size: 12px; }
+        .key-select select { background: #1a1a2e; color: #0ff; border: 1px solid #0ff5; padding: 2px 4px;
+                             font-family: monospace; border-radius: 3px; }
+
+        .preset-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
+        .preset-btns button { font-size: 11px; padding: 4px 10px; background: #16213e; color: #0ff;
+                              border: 1px solid #0ff3; cursor: pointer; font-family: monospace; border-radius: 3px; }
+        .preset-btns button:hover { background: #0ff2; }
+    </style>
+</head>
+<body>
+    <h1>8-Bit Tune Generator</h1>
+
+    <div class="transport">
+        <button onclick="togglePlay()" id="play-btn">PLAY</button>
+        <button onclick="randomize()">RANDOM</button>
+        <button onclick="saveWAV()" id="save-btn">SAVE WAV</button>
+    </div>
+
+    <div class="controls">
+        <div class="panel">
+            <h3>Tempo & Key</h3>
+            <div class="row">
+                <label>BPM</label>
+                <input type="range" id="bpm" min="80" max="200" value="140" oninput="updateBPM(this.value)">
+                <span class="val" id="bpm-val">140</span>
+            </div>
+            <div class="row">
+                <label>Key</label>
+                <select id="key-select" onchange="changeKey()">
+                    <option value="C">C</option><option value="C#">C#</option>
+                    <option value="D">D</option><option value="D#">D#</option>
+                    <option value="E">E</option><option value="F">F</option>
+                    <option value="F#">F#</option><option value="G">G</option>
+                    <option value="G#">G#</option><option value="A">A</option>
+                    <option value="A#">A#</option><option value="B">B</option>
+                </select>
+                <select id="scale-select" onchange="changeKey()">
+                    <option value="major">Major</option>
+                    <option value="minor">Minor</option>
+                    <option value="pentatonic">Pentatonic</option>
+                    <option value="blues">Blues</option>
+                </select>
+            </div>
+        </div>
+        <div class="panel">
+            <h3>Melody</h3>
+            <div class="row">
+                <label>Wave</label>
+                <select id="melody-wave">
+                    <option value="square">Square</option>
+                    <option value="sawtooth">Sawtooth</option>
+                    <option value="triangle">Triangle</option>
+                </select>
+            </div>
+            <div class="row">
+                <label>Volume</label>
+                <input type="range" id="melody-vol" min="0" max="100" value="60">
+            </div>
+        </div>
+        <div class="panel">
+            <h3>Bass</h3>
+            <div class="row">
+                <label>Wave</label>
+                <select id="bass-wave">
+                    <option value="triangle">Triangle</option>
+                    <option value="square">Square</option>
+                    <option value="sawtooth">Sawtooth</option>
+                </select>
+            </div>
+            <div class="row">
+                <label>Volume</label>
+                <input type="range" id="bass-vol" min="0" max="100" value="70">
+            </div>
+        </div>
+        <div class="panel">
+            <h3>Drums</h3>
+            <div class="row">
+                <label>Volume</label>
+                <input type="range" id="drum-vol" min="0" max="100" value="70">
+            </div>
+        </div>
+    </div>
+
+    <div class="preset-btns">
+        <button onclick="loadPreset('happy')">Happy</button>
+        <button onclick="loadPreset('dark')">Dark</button>
+        <button onclick="loadPreset('march')">March</button>
+        <button onclick="loadPreset('chill')">Chill</button>
+    </div>
+
+    <div class="grid-wrap" id="grids"></div>
+
+<script>
+// --- MUSIC THEORY ---
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const SCALES = {
+    major:      [0,2,4,5,7,9,11],
+    minor:      [0,2,3,5,7,8,10],
+    pentatonic: [0,2,4,7,9],
+    blues:      [0,3,5,6,7,10],
+};
+
+function noteFreq(note, octave) {
+    // A4 = 440Hz, MIDI 69
+    const midi = 12 * (octave + 1) + NOTE_NAMES.indexOf(note);
+    return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function getScaleNotes(root, scaleName, octaveLow, octaveHigh) {
+    const intervals = SCALES[scaleName];
+    const rootIdx = NOTE_NAMES.indexOf(root);
+    const notes = [];
+    for (let oct = octaveLow; oct <= octaveHigh; oct++) {
+        for (const interval of intervals) {
+            const ni = (rootIdx + interval) % 12;
+            const actualOct = oct + Math.floor((rootIdx + interval) / 12);
+            notes.push({ name: NOTE_NAMES[ni] + actualOct, freq: noteFreq(NOTE_NAMES[ni], actualOct) });
+        }
+    }
+    return notes;
+}
+
+// --- STATE ---
+const STEPS = 16;
+let melodyNotes = [];  // scale notes for melody rows
+let bassNotes = [];    // scale notes for bass rows
+let melodyGrid = [];   // [row][step] booleans
+let bassGrid = [];
+let drumGrid = [];     // [row][step], rows: 0=kick, 1=snare, 2=hihat
+const DRUM_ROWS = 3;
+const DRUM_NAMES = ['Kick', 'Snare', 'HiHat'];
+
+let bpm = 140;
+let ctx = null;
+let playing = false;
+let nextBeatTime = 0;
+let currentStep = 0;
+let schedulerTimer = null;
+
+function init() {
+    changeKey();
+    buildGrids();
+    // Set a default pattern
+    loadPreset('happy');
+}
+
+function changeKey() {
+    const root = document.getElementById('key-select').value;
+    const scale = document.getElementById('scale-select').value;
+    melodyNotes = getScaleNotes(root, scale, 4, 5);
+    bassNotes = getScaleNotes(root, scale, 2, 3);
+
+    // Reset grids to match new note count
+    melodyGrid = Array.from({ length: melodyNotes.length }, () => Array(STEPS).fill(false));
+    bassGrid = Array.from({ length: bassNotes.length }, () => Array(STEPS).fill(false));
+    drumGrid = Array.from({ length: DRUM_ROWS }, () => Array(STEPS).fill(false));
+    buildGrids();
+}
+
+function buildGrids() {
+    const container = document.getElementById('grids');
+    container.innerHTML = '';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'inline-block';
+    wrapper.style.textAlign = 'left';
+
+    // Melody grid
+    wrapper.appendChild(buildGridSection('Melody', melodyNotes, melodyGrid, 'on', true));
+    // Bass grid
+    wrapper.appendChild(buildGridSection('Bass', bassNotes, bassGrid, 'on-bass', true));
+    // Drum grid
+    wrapper.appendChild(buildGridSection('Drums', DRUM_NAMES.map(n => ({ name: n })), drumGrid, null, false));
+
+    container.appendChild(wrapper);
+}
+
+function buildGridSection(title, notes, grid, onClass, reversed) {
+    const section = document.createElement('div');
+    section.className = 'grid-section';
+    section.style.marginBottom = '12px';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'label';
+    lbl.textContent = title;
+    section.appendChild(lbl);
+
+    const displayNotes = reversed ? [...notes].reverse() : notes;
+    const drumColors = ['on-kick', 'on-snare', 'on'];
+
+    for (let displayRow = 0; displayRow < displayNotes.length; displayRow++) {
+        const actualRow = reversed ? notes.length - 1 - displayRow : displayRow;
+        const rowDiv = document.createElement('div');
+        rowDiv.style.display = 'flex';
+        rowDiv.style.alignItems = 'center';
+
+        const noteLabel = document.createElement('div');
+        noteLabel.className = 'note-label';
+        noteLabel.style.width = '32px';
+        noteLabel.style.fontSize = '9px';
+        noteLabel.style.color = '#0ff5';
+        noteLabel.style.textAlign = 'right';
+        noteLabel.style.paddingRight = '4px';
+        noteLabel.style.height = '14px';
+        noteLabel.style.display = 'flex';
+        noteLabel.style.alignItems = 'center';
+        noteLabel.style.justifyContent = 'flex-end';
+        noteLabel.textContent = displayNotes[displayRow].name;
+        rowDiv.appendChild(noteLabel);
+
+        for (let step = 0; step < STEPS; step++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.style.width = '20px';
+            cell.style.height = '14px';
+            cell.style.marginRight = (step % 4 === 3) ? '4px' : '2px';
+            cell.dataset.row = actualRow;
+            cell.dataset.step = step;
+            cell.dataset.grid = title.toLowerCase();
+
+            const cls = onClass || drumColors[actualRow];
+            if (grid[actualRow][step]) cell.classList.add(cls);
+
+            cell.addEventListener('mousedown', (e) => {
+                grid[actualRow][step] = !grid[actualRow][step];
+                cell.classList.toggle(cls);
+            });
+
+            rowDiv.appendChild(cell);
+        }
+        section.appendChild(rowDiv);
+    }
+    return section;
+}
+
+// --- PRESETS ---
+function loadPreset(name) {
+    const root = document.getElementById('key-select');
+    const scale = document.getElementById('scale-select');
+
+    // Clear all grids
+    for (const g of [melodyGrid, bassGrid, drumGrid]) {
+        for (const row of g) row.fill(false);
+    }
+
+    if (name === 'happy') {
+        root.value = 'C'; scale.value = 'major';
+        changeKey();
+        // Simple ascending melody
+        const mSteps = [[4,0],[5,2],[6,4],[7,6],[6,8],[5,10],[4,12],[3,14]];
+        for (const [r,s] of mSteps) if (melodyGrid[r]) melodyGrid[r][s] = true;
+        // Bass on root and fifth
+        if (bassGrid[0]) { bassGrid[0][0] = true; bassGrid[0][8] = true; }
+        if (bassGrid[4]) { bassGrid[4][4] = true; bassGrid[4][12] = true; }
+        // Classic 4/4 drums
+        drumGrid[0][0] = drumGrid[0][4] = drumGrid[0][8] = drumGrid[0][12] = true;  // kick
+        drumGrid[1][4] = drumGrid[1][12] = true;  // snare
+        drumGrid[2][0] = drumGrid[2][2] = drumGrid[2][4] = drumGrid[2][6] = drumGrid[2][8] = drumGrid[2][10] = drumGrid[2][12] = drumGrid[2][14] = true; // hihat
+    } else if (name === 'dark') {
+        root.value = 'A'; scale.value = 'minor';
+        changeKey();
+        const mSteps = [[6,0],[5,2],[4,3],[3,4],[2,6],[3,8],[4,10],[2,12]];
+        for (const [r,s] of mSteps) if (melodyGrid[r]) melodyGrid[r][s] = true;
+        if (bassGrid[0]) { bassGrid[0][0] = true; bassGrid[0][8] = true; }
+        if (bassGrid[2]) { bassGrid[2][4] = true; bassGrid[2][12] = true; }
+        drumGrid[0][0] = drumGrid[0][6] = drumGrid[0][8] = drumGrid[0][14] = true;
+        drumGrid[1][4] = drumGrid[1][12] = true;
+        drumGrid[2][0] = drumGrid[2][2] = drumGrid[2][4] = drumGrid[2][6] = drumGrid[2][8] = drumGrid[2][10] = drumGrid[2][12] = drumGrid[2][14] = true;
+    } else if (name === 'march') {
+        root.value = 'D'; scale.value = 'major';
+        changeKey();
+        const mSteps = [[3,0],[3,2],[5,4],[5,6],[6,8],[5,10],[3,12],[4,14]];
+        for (const [r,s] of mSteps) if (melodyGrid[r]) melodyGrid[r][s] = true;
+        if (bassGrid[0]) { bassGrid[0][0] = true; bassGrid[0][4] = true; bassGrid[0][8] = true; bassGrid[0][12] = true; }
+        drumGrid[0][0] = drumGrid[0][2] = drumGrid[0][4] = drumGrid[0][6] = drumGrid[0][8] = drumGrid[0][10] = drumGrid[0][12] = drumGrid[0][14] = true;
+        drumGrid[1][2] = drumGrid[1][6] = drumGrid[1][10] = drumGrid[1][14] = true;
+    } else if (name === 'chill') {
+        root.value = 'G'; scale.value = 'pentatonic';
+        changeKey();
+        bpm = 100; document.getElementById('bpm').value = 100; document.getElementById('bpm-val').textContent = '100';
+        const mSteps = [[3,0],[4,4],[5,6],[4,8],[3,12]];
+        for (const [r,s] of mSteps) if (melodyGrid[r]) melodyGrid[r][s] = true;
+        if (bassGrid[0]) { bassGrid[0][0] = true; bassGrid[0][8] = true; }
+        if (bassGrid[2]) { bassGrid[2][4] = true; bassGrid[2][12] = true; }
+        drumGrid[0][0] = drumGrid[0][8] = true;
+        drumGrid[1][4] = drumGrid[1][12] = true;
+        drumGrid[2][0] = drumGrid[2][4] = drumGrid[2][8] = drumGrid[2][12] = true;
+    }
+
+    buildGrids();
+}
+
+function randomize() {
+    const keys = ['C','D','E','F','G','A'];
+    const scales = ['major','minor','pentatonic','blues'];
+    document.getElementById('key-select').value = keys[Math.floor(Math.random() * keys.length)];
+    document.getElementById('scale-select').value = scales[Math.floor(Math.random() * scales.length)];
+    bpm = 100 + Math.floor(Math.random() * 80);
+    document.getElementById('bpm').value = bpm;
+    document.getElementById('bpm-val').textContent = bpm;
+    changeKey();
+
+    // Random melody: 6-10 notes
+    const noteCount = 6 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < noteCount; i++) {
+        const r = Math.floor(Math.random() * melodyNotes.length);
+        const s = Math.floor(Math.random() * STEPS);
+        melodyGrid[r][s] = true;
+    }
+    // Random bass: 3-5 notes
+    const bassCount = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < bassCount; i++) {
+        const r = Math.floor(Math.random() * bassNotes.length);
+        const s = Math.floor(Math.random() * STEPS);
+        bassGrid[r][s] = true;
+    }
+    // Random drums
+    for (let s = 0; s < STEPS; s++) {
+        if (s % 4 === 0) drumGrid[0][s] = true;                          // kick on beats
+        if (s % 8 === 4) drumGrid[1][s] = true;                          // snare on 2 & 4
+        if (Math.random() > 0.4) drumGrid[2][s] = true;                  // hihat scatter
+        if (Math.random() > 0.7) drumGrid[0][s] = !drumGrid[0][s];      // some variation
+    }
+
+    buildGrids();
+}
+
+// --- AUDIO ENGINE ---
+function updateBPM(v) {
+    bpm = parseInt(v);
+    document.getElementById('bpm-val').textContent = v;
+}
+
+function getVal(id) { return document.getElementById(id).value; }
+
+// All synth functions take a target context (ac) so they work with both
+// the live AudioContext and OfflineAudioContext for export.
+
+function createOsc(ac, type, freq, startTime, duration, volume) {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.01);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+}
+
+function createKick(ac, startTime, vol) {
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.frequency.setValueAtTime(150, startTime);
+    osc.frequency.exponentialRampToValueAtTime(30, startTime + 0.12);
+    gain.gain.setValueAtTime(0.3 * vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(startTime);
+    osc.stop(startTime + 0.15);
+}
+
+function createSnare(ac, startTime, vol) {
+    // Noise part
+    const bufferSize = ac.sampleRate * 0.1;
+    const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const src = ac.createBufferSource();
+    const gain = ac.createGain();
+    src.buffer = buffer;
+    gain.gain.setValueAtTime(0.15 * vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.1);
+    src.connect(gain).connect(ac.destination);
+    src.start(startTime);
+    // Tone part
+    const osc = ac.createOscillator();
+    const g2 = ac.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = 200;
+    g2.gain.setValueAtTime(0.15 * vol, startTime);
+    g2.gain.exponentialRampToValueAtTime(0.001, startTime + 0.08);
+    osc.connect(g2).connect(ac.destination);
+    osc.start(startTime);
+    osc.stop(startTime + 0.1);
+}
+
+function createHihat(ac, startTime, vol) {
+    const bufferSize = ac.sampleRate * 0.05;
+    const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const src = ac.createBufferSource();
+    const gain = ac.createGain();
+    const hp = ac.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 7000;
+    src.buffer = buffer;
+    gain.gain.setValueAtTime(0.1 * vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.05);
+    src.connect(hp).connect(gain).connect(ac.destination);
+    src.start(startTime);
+}
+
+function scheduleStep(ac, step, time) {
+    const beatLen = 60 / bpm;
+    const melVol = getVal('melody-vol') / 100 * 0.15;
+    const melWave = getVal('melody-wave');
+    const bassVol = getVal('bass-vol') / 100 * 0.2;
+    const bassWave = getVal('bass-wave');
+    const drumVol = getVal('drum-vol') / 100;
+
+    for (let r = 0; r < melodyNotes.length; r++) {
+        if (melodyGrid[r][step]) {
+            createOsc(ac, melWave, melodyNotes[r].freq, time, beatLen * 0.8, melVol);
+        }
+    }
+    for (let r = 0; r < bassNotes.length; r++) {
+        if (bassGrid[r][step]) {
+            createOsc(ac, bassWave, bassNotes[r].freq, time, beatLen * 0.8, bassVol);
+        }
+    }
+    if (drumGrid[0][step]) createKick(ac, time, drumVol);
+    if (drumGrid[1][step]) createSnare(ac, time, drumVol);
+    if (drumGrid[2][step]) createHihat(ac, time, drumVol);
+}
+
+// Lookahead scheduler
+const SCHEDULE_AHEAD = 0.1;  // seconds
+const TICK_MS = 25;           // ms
+
+function scheduler() {
+    const beatLen = 60 / bpm;
+    while (nextBeatTime < ctx.currentTime + SCHEDULE_AHEAD) {
+        scheduleStep(ctx, currentStep, nextBeatTime);
+        highlightStep(currentStep, nextBeatTime);
+        currentStep = (currentStep + 1) % STEPS;
+        nextBeatTime += beatLen;
+    }
+}
+
+function highlightStep(step, time) {
+    const delayMs = (time - ctx.currentTime) * 1000;
+    setTimeout(() => {
+        document.querySelectorAll('.cell.playing').forEach(c => c.classList.remove('playing'));
+        document.querySelectorAll(`.cell[data-step="${step}"]`).forEach(c => c.classList.add('playing'));
+    }, Math.max(0, delayMs));
+}
+
+function togglePlay() {
+    if (playing) {
+        stopMusic();
+    } else {
+        startMusic();
+    }
+}
+
+function startMusic() {
+    if (playing) return;
+    ctx = new AudioContext();
+    playing = true;
+    currentStep = 0;
+    nextBeatTime = ctx.currentTime + 0.05;
+    schedulerTimer = setInterval(scheduler, TICK_MS);
+    document.getElementById('play-btn').textContent = 'STOP';
+    document.getElementById('play-btn').classList.add('active');
+}
+
+function stopMusic() {
+    if (!playing) return;
+    playing = false;
+    clearInterval(schedulerTimer);
+    ctx.close();
+    document.querySelectorAll('.cell.playing').forEach(c => c.classList.remove('playing'));
+    document.getElementById('play-btn').textContent = 'PLAY';
+    document.getElementById('play-btn').classList.remove('active');
+}
+
+// --- WAV EXPORT ---
+async function saveWAV() {
+    const btn = document.getElementById('save-btn');
+    btn.textContent = 'Rendering...';
+    btn.disabled = true;
+
+    // Render one full loop (16 steps) to an offline context
+    const beatLen = 60 / bpm;
+    const loopDuration = STEPS * beatLen;
+    const sampleRate = 44100;
+    const offline = new OfflineAudioContext(1, Math.ceil(loopDuration * sampleRate), sampleRate);
+
+    // Schedule all 16 steps
+    for (let step = 0; step < STEPS; step++) {
+        scheduleStep(offline, step, step * beatLen);
+    }
+
+    const rendered = await offline.startRendering();
+    const wavBlob = audioBufferToWAV(rendered);
+
+    // Download
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(wavBlob);
+    a.download = 'background.wav';
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    btn.textContent = 'SAVE WAV';
+    btn.disabled = false;
+}
+
+function audioBufferToWAV(buffer) {
+    const numSamples = buffer.length;
+    const sampleRate = buffer.sampleRate;
+    const bitsPerSample = 16;
+    const bytesPerSample = bitsPerSample / 8;
+    const dataSize = numSamples * bytesPerSample;
+    const headerSize = 44;
+    const arrayBuffer = new ArrayBuffer(headerSize + dataSize);
+    const view = new DataView(arrayBuffer);
+
+    // RIFF header
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(view, 8, 'WAVE');
+
+    // fmt chunk
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);           // chunk size
+    view.setUint16(20, 1, true);            // PCM
+    view.setUint16(22, 1, true);            // mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * bytesPerSample, true);
+    view.setUint16(32, bytesPerSample, true);
+    view.setUint16(34, bitsPerSample, true);
+
+    // data chunk
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    const samples = buffer.getChannelData(0);
+    let offset = 44;
+    for (let i = 0; i < numSamples; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s * 0x7FFF, true);
+        offset += 2;
+    }
+
+    return new Blob([arrayBuffer], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+    }
+}
+
+init();
+</script>
+</body>
+</html>
