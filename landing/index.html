@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yuval's Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0a0a1a;
+      color: #e0e0e0;
+      font-family: 'Press Start 2P', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* Starfield background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1px 1px at 10% 20%, #fff4 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 60%, #fff3 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 10%, #fff2 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 80%, #fff4 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 40%, #fff3 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 15% 85%, #fff5 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 15%, #fff3 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 45% 45%, #fff4 0%, transparent 100%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    header {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 48px 24px 16px;
+    }
+
+    h1 {
+      font-size: 32px;
+      letter-spacing: 4px;
+      background: linear-gradient(180deg, #ffcc00 0%, #ff6600 50%, #e94560 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 12px #ff660066);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 10px;
+      color: #8888aa;
+      letter-spacing: 2px;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 32px;
+      max-width: 900px;
+      width: 100%;
+      padding: 40px 24px 60px;
+    }
+
+    .game-card {
+      position: relative;
+      background: #16213e;
+      border: 3px solid #333;
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .game-card:hover {
+      border-color: #e94560;
+      transform: translateY(-6px);
+      box-shadow: 0 8px 30px #e9456044, 0 0 60px #e9456022;
+    }
+
+    .game-card img {
+      width: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      color: #e94560;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .card-desc {
+      font-size: 8px;
+      color: #8888aa;
+      line-height: 1.8;
+    }
+
+    .card-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 7px;
+      padding: 4px 8px;
+      background: #e94560;
+      color: #fff;
+      letter-spacing: 1px;
+      border-radius: 2px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .coming-soon {
+      position: relative;
+      background: #16213e;
+      border: 3px dashed #333;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 240px;
+      gap: 12px;
+    }
+
+    .coming-soon .q-mark {
+      font-size: 48px;
+      color: #333;
+    }
+
+    .coming-soon span {
+      font-size: 10px;
+      color: #444;
+      letter-spacing: 2px;
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 24px;
+      font-size: 8px;
+      color: #444;
+      letter-spacing: 1px;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 22px; }
+      header { padding: 32px 16px 12px; }
+      main { padding: 24px 16px 40px; gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>YUVAL'S GAMES</h1>
+    <p class="subtitle">PIXEL ADVENTURES & MORE</p>
+  </header>
+
+  <main>
+    <a class="game-card" href="https://cats.yuval.nl">
+      <span class="card-badge">PLAY NOW</span>
+      <img src="img/cat-alley.png" alt="Cat Alley">
+      <div class="card-body">
+        <div class="card-title">Cat Alley</div>
+        <p class="card-desc">Roam the streets, steal accessories from wandering cats, and build your ultimate feline collection.</p>
+      </div>
+    </a>
+
+    <div class="coming-soon">
+      <div class="q-mark">?</div>
+      <span>COMING SOON</span>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2026 YUVAL'S GAMES
+  </footer>
+</body>
+</html>
