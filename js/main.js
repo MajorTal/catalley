@@ -3,7 +3,7 @@
 import { loadState } from './state.js';
 import { startStreet, stopStreet, resumeStreet } from './cat-walker.js';
 import { renderGallery, initGalleryActions, updateStats } from './gallery.js';
-import { initMusic } from './music.js';
+import { initMusic, replaceMusic } from './music.js';
 
 // ===== Toast System =====
 export function showToast(message) {
@@ -54,6 +54,14 @@ function init() {
   initGalleryActions();
   updateStats();
   initMusic();
+
+  // Listen for music from the embedded editor
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'catalley-music') {
+      replaceMusic(e.data.url);
+      showToast('Music updated!');
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

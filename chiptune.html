@@ -66,6 +66,7 @@
         <button onclick="togglePlay()" id="play-btn">PLAY</button>
         <button onclick="randomize()">RANDOM</button>
         <button onclick="saveWAV()" id="save-btn">SAVE WAV</button>
+        <button onclick="useThis()" id="use-btn" style="display:none; background:#0f8;">USE THIS</button>
     </div>
 
     <div class="controls">
@@ -603,6 +604,35 @@ function writeString(view, offset, str) {
     for (let i = 0; i < str.length; i++) {
         view.setUint8(offset + i, str.charCodeAt(i));
     }
+}
+
+// --- EMBEDDED MODE ---
+const embedded = window.parent !== window;
+if (embedded) {
+    document.getElementById('use-btn').style.display = '';
+}
+
+async function useThis() {
+    const btn = document.getElementById('use-btn');
+    btn.textContent = 'Rendering...';
+    btn.disabled = true;
+
+    const beatLen = 60 / bpm;
+    const loopDuration = STEPS * beatLen;
+    const sampleRate = 44100;
+    const offline = new OfflineAudioContext(1, Math.ceil(loopDuration * sampleRate), sampleRate);
+
+    for (let step = 0; step < STEPS; step++) {
+        scheduleStep(offline, step, step * beatLen);
+    }
+
+    const rendered = await offline.startRendering();
+    const wavBlob = audioBufferToWAV(rendered);
+    const url = URL.createObjectURL(wavBlob);
+    window.parent.postMessage({ type: 'catalley-music', url }, '*');
+
+    btn.textContent = 'APPLIED!';
+    setTimeout(() => { btn.textContent = 'USE THIS'; btn.disabled = false; }, 1500);
 }
 
 init();

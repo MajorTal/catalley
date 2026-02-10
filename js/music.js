@@ -28,3 +28,14 @@ export function setMusicVolume(v) {
 export function getMusicVolume() {
   return musicVolume;
 }
+
+export function replaceMusic(blobUrl) {
+  if (audio) {
+    audio.pause();
+    audio.removeAttribute('src');
+  }
+  audio = new Audio(blobUrl);
+  audio.loop = true;
+  audio.volume = musicVolume;
+  audio.play().catch(() => {});
+}
