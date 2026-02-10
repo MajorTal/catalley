@@ -8,14 +8,16 @@ export function initMusic() {
   audio.loop = true;
   audio.volume = musicVolume;
 
-  // Autoplay on first user interaction (browsers require gesture)
-  const unlock = () => {
-    audio.play().catch(() => {});
-    document.removeEventListener('click', unlock);
-    document.removeEventListener('keydown', unlock);
-  };
-  document.addEventListener('click', unlock);
-  document.addEventListener('keydown', unlock);
+  // Try to play immediately; if browser blocks, fall back to first interaction
+  audio.play().catch(() => {
+    const unlock = () => {
+      audio.play().catch(() => {});
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('keydown', unlock);
+    };
+    document.addEventListener('click', unlock);
+    document.addEventListener('keydown', unlock);
+  });
 }
 
 export function setMusicVolume(v) {

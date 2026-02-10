@@ -124,7 +124,7 @@ function spawnCat(canvasWidth, canvasHeight) {
 
   walkers.push({
     base: pickRandomBase(),
-    accessories: pickRandomAccessories(1, 3),
+    accessories: Math.random() < 1/3 ? pickRandomAccessories(1, 1) : pickRandomAccessories(0, 0),
     x: goRight ? -DISPLAY_SIZE : canvasWidth + DISPLAY_SIZE,
     y: groundY - DISPLAY_SIZE + 4,
     speed: goRight ? speed : -speed,
@@ -200,8 +200,7 @@ function handleClick(e) {
     if (mx >= catX && mx <= catX + DISPLAY_SIZE &&
         my >= catY && my <= catY + DISPLAY_SIZE) {
 
-      // Steal accessories from this cat
-      let stolenAny = false;
+      // Steal one random accessory from this cat
       const state = getState();
 
       // Also steal the base color
@@ -209,19 +208,15 @@ function handleClick(e) {
         setBase(w.base);
       }
 
-      for (const slot of SLOTS) {
-        if (w.accessories[slot]) {
-          setAccessory(slot, w.accessories[slot]);
-          stolenAny = true;
+      const filledSlots = SLOTS.filter(slot => w.accessories[slot]);
+      if (filledSlots.length > 0) {
+        const slot = filledSlots[Math.floor(Math.random() * filledSlots.length)];
+        setAccessory(slot, w.accessories[slot]);
 
-          // Show floating text for each accessory
-          const acc = ACCESSORIES[w.accessories[slot]];
-          const rarity = RARITY[acc.rarity];
-          showFloatingText(acc.name + '!', rarity.color, catX + DISPLAY_SIZE / 2, catY - 10);
-        }
-      }
-
-      if (!stolenAny) {
+        const acc = ACCESSORIES[w.accessories[slot]];
+        const rarity = RARITY[acc.rarity];
+        showFloatingText(acc.name + '!', rarity.color, catX + DISPLAY_SIZE / 2, catY - 10);
+      } else {
         showFloatingText('No accessories!', '#888', catX + DISPLAY_SIZE / 2, catY - 10);
       }
 
