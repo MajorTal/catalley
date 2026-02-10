@@ -235,6 +235,27 @@ canvas { image-rendering: pixelated; }
   color: var(--text-dim);
 }
 
+.gallery-card .card-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.gallery-card .btn-reload {
+  font-family: var(--pixel-font);
+  font-size: 7px;
+  padding: 4px 8px;
+  background: transparent;
+  color: #55cc88;
+  border: 1px solid #55cc88;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gallery-card .btn-reload:hover {
+  background: #55cc88;
+  color: var(--bg);
+}
+
 .gallery-card .btn-release {
   font-family: var(--pixel-font);
   font-size: 7px;

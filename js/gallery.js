@@ -1,7 +1,7 @@
 // gallery.js - Gallery rendering, save/delete
 
 import { DISPLAY_SIZE, drawComposedCat, SLOTS } from './sprites.js';
-import { getState, saveCatToGallery, deleteCatFromGallery, resetCurrentCat } from './state.js';
+import { getState, saveCatToGallery, deleteCatFromGallery, resetCurrentCat, swapWithGallery } from './state.js';
 import { showToast } from './main.js';
 import { updateYourCatPanel } from './cat-walker.js';
 
@@ -37,6 +37,22 @@ export function renderGallery() {
     dateEl.className = 'cat-date';
     dateEl.textContent = new Date(cat.createdAt).toLocaleDateString();
 
+    const reloadBtn = document.createElement('button');
+    reloadBtn.className = 'btn-reload';
+    reloadBtn.textContent = 'Reload';
+    reloadBtn.addEventListener('click', () => {
+      const nameInput = document.getElementById('cat-name-input');
+      const streetName = nameInput.value.trim() || 'Unnamed';
+      const loaded = swapWithGallery(cat.id, streetName);
+      if (loaded) {
+        nameInput.value = loaded.name;
+        updateYourCatPanel();
+        renderGallery();
+        showToast(`${loaded.name} is back on the street!`);
+        updateStats();
+      }
+    });
+
     const releaseBtn = document.createElement('button');
     releaseBtn.className = 'btn-release';
     releaseBtn.textContent = 'Release';
@@ -49,10 +65,15 @@ export function renderGallery() {
       }
     });
 
+    const btnRow = document.createElement('div');
+    btnRow.className = 'card-buttons';
+    btnRow.appendChild(reloadBtn);
+    btnRow.appendChild(releaseBtn);
+
     card.appendChild(cvs);
     card.appendChild(nameEl);
     card.appendChild(dateEl);
-    card.appendChild(releaseBtn);
+    card.appendChild(btnRow);
     grid.appendChild(card);
   }
 }
