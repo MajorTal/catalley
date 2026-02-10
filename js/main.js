@@ -3,7 +3,7 @@
 import { loadState } from './state.js';
 import { startStreet, stopStreet, resumeStreet } from './cat-walker.js';
 import { renderGallery, initGalleryActions, updateStats } from './gallery.js';
-import { initMusic, replaceMusic } from './music.js';
+import { initMusic, replaceMusic, pauseMusic, resumeMusic } from './music.js';
 
 // ===== Toast System =====
 export function showToast(message) {
@@ -35,6 +35,12 @@ function switchView(viewName) {
 
   if (viewName === 'alley') {
     renderGallery();
+  }
+
+  if (viewName === 'music') {
+    pauseMusic();
+  } else if (currentView === 'music') {
+    resumeMusic();
   }
 
   currentView = viewName;

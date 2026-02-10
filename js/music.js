@@ -29,6 +29,14 @@ export function getMusicVolume() {
   return musicVolume;
 }
 
+export function pauseMusic() {
+  if (audio) audio.pause();
+}
+
+export function resumeMusic() {
+  if (audio) audio.play().catch(() => {});
+}
+
 export function replaceMusic(blobUrl) {
   if (audio) {
     audio.pause();
