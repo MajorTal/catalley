@@ -5,7 +5,7 @@ import {
   drawComposedCat, pickRandomAccessories, pickRandomBase,
   ACCESSORIES, RARITY, SLOTS
 } from './sprites.js';
-import { getState, setAccessory, setBase } from './state.js';
+import { getState, setAccessory } from './state.js';
 import { showToast } from './main.js';
 
 const MAX_CATS = 6;
@@ -201,19 +201,16 @@ function handleClick(e) {
         my >= catY && my <= catY + DISPLAY_SIZE) {
 
       // Steal one random accessory from this cat
-      const state = getState();
-
-      // Also steal the base color
-      if (w.base !== state.currentCat.base) {
-        setBase(w.base);
-      }
-
       const filledSlots = SLOTS.filter(slot => w.accessories[slot]);
       if (filledSlots.length > 0) {
         const slot = filledSlots[Math.floor(Math.random() * filledSlots.length)];
-        setAccessory(slot, w.accessories[slot]);
+        const stolenId = w.accessories[slot];
+        setAccessory(slot, stolenId);
 
-        const acc = ACCESSORIES[w.accessories[slot]];
+        // Remove the accessory from the walker cat
+        w.accessories[slot] = null;
+
+        const acc = ACCESSORIES[stolenId];
         const rarity = RARITY[acc.rarity];
         showFloatingText(acc.name + '!', rarity.color, catX + DISPLAY_SIZE / 2, catY - 10);
       } else {
