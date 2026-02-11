@@ -164,6 +164,38 @@ export const ACCESSORIES = {
       ['#ff4488', '#ff4488', '#ff4488', '#ff4488', '#ff4488', '#ff4488', '#ff4488', null],
     ],
   },
+  cowboy_hat: {
+    name: 'Cowboy Hat', slot: 'hat', rarity: 'COMMON',
+    anchor: { x: 7, y: 1 },
+    pixels: [
+      [null, null, null, null, '#8B4513', '#8B4513', '#8B4513', '#8B4513', null, null, null, null, null, null],
+      [null, null, null, '#8B4513', '#a0522d', '#c68642', '#c68642', '#a0522d', '#8B4513', null, null, null, null, null],
+      [null, null, null, '#8B4513', '#daa520', '#daa520', '#daa520', '#daa520', '#8B4513', null, null, null, null, null],
+      [null, '#8B4513', '#8B4513', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#8B4513', '#8B4513', null, null, null],
+      ['#8B4513', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#a0522d', '#8B4513', null, null],
+    ],
+  },
+  pirate_hat: {
+    name: 'Pirate Hat', slot: 'hat', rarity: 'UNCOMMON',
+    anchor: { x: 8, y: 0 },
+    pixels: [
+      [null, null, null, '#222', '#222', '#222', '#222', null, null, null, null, null],
+      [null, null, '#222', '#333', '#333', '#333', '#333', '#222', null, null, null, null],
+      [null, '#222', '#333', '#fff', '#333', '#333', '#fff', '#333', '#222', null, null, null],
+      [null, '#222', '#333', '#333', '#fff', '#fff', '#333', '#333', '#222', null, null, null],
+      ['#222', '#333', '#333', '#333', '#333', '#333', '#333', '#333', '#333', '#222', null, null],
+      ['#daa520', '#222', '#222', '#222', '#222', '#222', '#222', '#222', '#222', '#222', '#daa520', null],
+    ],
+  },
+  halo: {
+    name: 'Halo', slot: 'hat', rarity: 'EPIC',
+    anchor: { x: 10, y: 1 },
+    pixels: [
+      [null, '#ffd700', '#ffd700', '#ffd700', '#ffd700', '#ffd700', '#ffd700', null],
+      ['#ffd700', '#ffee44', '#fff9a0', '#fff9a0', '#fff9a0', '#fff9a0', '#ffee44', '#ffd700'],
+      [null, '#ffd700', '#ffd700', '#ffd700', '#ffd700', '#ffd700', '#ffd700', null],
+    ],
+  },
 
   // ===== GLASSES =====
   round_glasses: {
@@ -217,6 +249,34 @@ export const ACCESSORIES = {
       [null, null, '#ff3377', null, null, null, null, null, '#ff3377', null],
     ],
   },
+  eye_patch: {
+    name: 'Eye Patch', slot: 'glasses', rarity: 'COMMON',
+    anchor: { x: 9, y: 9 },
+    pixels: [
+      ['#555', '#555', '#555', '#555', '#555', '#555', '#555', '#555', '#555', '#555'],
+      [null, null, '#222', '#222', '#222', null, null, null, null, null],
+      [null, null, '#222', '#111', '#222', null, null, null, null, null],
+      [null, null, null, '#222', null, null, null, null, null, null],
+    ],
+  },
+  three_d_glasses: {
+    name: '3D Glasses', slot: 'glasses', rarity: 'UNCOMMON',
+    anchor: { x: 9, y: 10 },
+    pixels: [
+      ['#eee', '#eee', '#eee', '#eee', '#eee', '#eee', '#eee', '#eee', '#eee', '#eee'],
+      ['#eee', '#dd2222', '#dd2222', '#eee', null, null, '#eee', '#2244dd', '#2244dd', '#eee'],
+      ['#eee', '#eee', '#eee', '#eee', null, null, '#eee', '#eee', '#eee', '#eee'],
+    ],
+  },
+  laser_visor: {
+    name: 'Laser Visor', slot: 'glasses', rarity: 'RARE',
+    anchor: { x: 8, y: 9 },
+    pixels: [
+      [null, '#cc0000', '#cc0000', '#cc0000', '#cc0000', '#cc0000', '#cc0000', '#cc0000', '#cc0000', '#cc0000', '#cc0000', null],
+      [null, '#ff0000', '#ff3333', '#ff3333', '#ff3333', '#ff3333', '#ff3333', '#ff3333', '#ff3333', '#ff3333', '#ff0000', null],
+      [null, null, '#cc0000', '#cc0000', null, null, null, null, '#cc0000', '#cc0000', null, null],
+    ],
+  },
 
   // ===== SCARVES =====
   red_scarf: {
@@ -254,6 +314,35 @@ export const ACCESSORIES = {
     pixels: [
       [null, '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', '#daa520', null],
       [null, '#b8860b', '#eec840', '#b8860b', '#eec840', '#b8860b', '#eec840', '#b8860b', '#eec840', '#b8860b', '#eec840', '#b8860b', '#eec840', '#b8860b'],
+    ],
+  },
+  green_scarf: {
+    name: 'Green Scarf', slot: 'scarf', rarity: 'COMMON',
+    anchor: { x: 7, y: 15 },
+    pixels: [
+      [null, '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', null],
+      [null, '#1a6b1a', '#33aa33', '#1a6b1a', '#33aa33', '#1a6b1a', '#33aa33', '#1a6b1a', '#33aa33', '#1a6b1a', '#33aa33', '#1a6b1a', '#33aa33', '#1a6b1a'],
+      [null, null, null, null, null, null, null, null, null, null, null, null, '#1a6b1a', '#228B22'],
+      [null, null, null, null, null, null, null, null, null, null, null, null, null, '#1a6b1a'],
+    ],
+  },
+  pink_scarf: {
+    name: 'Pink Scarf', slot: 'scarf', rarity: 'COMMON',
+    anchor: { x: 7, y: 15 },
+    pixels: [
+      [null, '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', '#dd5599', null],
+      [null, '#bb4488', '#ee66aa', '#bb4488', '#ee66aa', '#bb4488', '#ee66aa', '#bb4488', '#ee66aa', '#bb4488', '#ee66aa', '#bb4488', '#ee66aa', '#bb4488'],
+      [null, null, null, null, null, null, null, null, null, null, null, null, '#bb4488', '#dd5599'],
+      [null, null, null, null, null, null, null, null, null, null, null, null, null, '#bb4488'],
+    ],
+  },
+  flame_scarf: {
+    name: 'Flame Scarf', slot: 'scarf', rarity: 'RARE',
+    anchor: { x: 7, y: 15 },
+    pixels: [
+      [null, '#cc2222', '#dd4400', '#ee8800', '#ffcc00', '#ee8800', '#dd4400', '#cc2222', '#dd4400', '#ee8800', '#ffcc00', '#ee8800', '#dd4400', null],
+      [null, '#aa1111', '#cc3300', '#dd6600', '#eeaa00', '#dd6600', '#cc3300', '#aa1111', '#cc3300', '#dd6600', '#eeaa00', '#dd6600', '#cc3300', '#aa1111'],
+      [null, null, null, null, null, null, null, null, null, null, null, null, '#cc3300', '#dd4400'],
     ],
   },
 
@@ -302,6 +391,30 @@ export const ACCESSORIES = {
       ['#cc2222', '#dd3333', '#ee4444', '#ee4444', '#dd3333', '#cc2222'],
       ['#cc2222', '#dd3333', '#cc2222', '#cc2222', '#dd3333', '#cc2222'],
       ['#cc2222', null, null, null, null, '#cc2222'],
+    ],
+  },
+  green_collar: {
+    name: 'Green Collar', slot: 'collar', rarity: 'COMMON',
+    anchor: { x: 8, y: 15 },
+    pixels: [
+      ['#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22', '#228B22'],
+      [null, null, null, null, null, '#44cc44', '#44cc44', null, null, null, null, null],
+    ],
+  },
+  diamond_collar: {
+    name: 'Diamond Collar', slot: 'collar', rarity: 'UNCOMMON',
+    anchor: { x: 8, y: 15 },
+    pixels: [
+      ['#aaddff', '#88bbee', '#aaddff', '#88bbee', '#aaddff', '#88bbee', '#aaddff', '#88bbee', '#aaddff', '#88bbee', '#aaddff', '#88bbee'],
+      [null, null, null, null, '#ffffff', '#aaddff', '#aaddff', '#ffffff', null, null, null, null],
+    ],
+  },
+  chain_collar: {
+    name: 'Chain Collar', slot: 'collar', rarity: 'RARE',
+    anchor: { x: 8, y: 15 },
+    pixels: [
+      ['#888', '#ccc', '#888', '#ccc', '#888', '#ccc', '#888', '#ccc', '#888', '#ccc', '#888', '#ccc'],
+      ['#ccc', '#888', '#ccc', '#888', '#ccc', '#888', '#ccc', '#888', '#ccc', '#888', '#ccc', '#888'],
     ],
   },
 
@@ -394,6 +507,47 @@ export const ACCESSORIES = {
       ['#8822cc', '#9933dd', '#aa44ee', '#9933dd', '#8822cc'],
       ['#8822cc', '#9933dd', '#9933dd', '#9933dd', '#8822cc'],
       [null, '#8822cc', '#8822cc', '#8822cc', null],
+    ],
+  },
+  mouse_toy: {
+    name: 'Mouse Toy', slot: 'accessory', rarity: 'COMMON',
+    anchor: { x: 22, y: 22 },
+    pixels: [
+      ['#777', null, null, '#777', null],
+      ['#999', '#aaa', '#aaa', '#999', null],
+      ['#999', '#222', '#aaa', '#aaa', '#ff8899'],
+      ['#999', '#aaa', '#aaa', '#999', null],
+      [null, '#999', '#999', null, null],
+    ],
+  },
+  shield: {
+    name: 'Shield', slot: 'accessory', rarity: 'UNCOMMON',
+    anchor: { x: 21, y: 16 },
+    pixels: [
+      [null, '#888', '#888', '#888', '#888', null],
+      ['#888', '#4488cc', '#4488cc', '#4488cc', '#4488cc', '#888'],
+      ['#888', '#4488cc', '#ffdd00', '#ffdd00', '#4488cc', '#888'],
+      ['#888', '#4488cc', '#ffdd00', '#ffdd00', '#4488cc', '#888'],
+      ['#888', '#4488cc', '#4488cc', '#4488cc', '#4488cc', '#888'],
+      [null, '#888', '#4488cc', '#4488cc', '#888', null],
+      [null, null, '#888', '#888', null, null],
+    ],
+  },
+  trident: {
+    name: 'Trident', slot: 'accessory', rarity: 'EPIC',
+    anchor: { x: 21, y: 10 },
+    pixels: [
+      ['#ffd700', null, '#ffd700', null, '#ffd700'],
+      ['#ffd700', null, '#ffd700', null, '#ffd700'],
+      ['#ffd700', '#ffd700', '#ffd700', '#ffd700', '#ffd700'],
+      [null, null, '#daa520', null, null],
+      [null, null, '#daa520', null, null],
+      [null, null, '#daa520', null, null],
+      [null, null, '#daa520', null, null],
+      [null, null, '#daa520', null, null],
+      [null, null, '#daa520', null, null],
+      [null, null, '#8B4513', null, null],
+      [null, null, '#8B4513', null, null],
     ],
   },
 };

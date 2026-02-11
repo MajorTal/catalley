@@ -9,8 +9,8 @@ import { getState, setAccessory } from './state.js';
 import { showToast } from './main.js';
 
 const MAX_CATS = 6;
-const SPAWN_MIN = 1500;
-const SPAWN_MAX = 4000;
+const SPAWN_MIN = 2000;
+const SPAWN_MAX = 3500;
 const CAT_SPEED_MIN = 0.4;
 const CAT_SPEED_MAX = 1.2;
 const BOB_AMPLITUDE = 2;
