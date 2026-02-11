@@ -118,17 +118,16 @@ function drawBackground(width, height) {
 function spawnCat(canvasWidth, canvasHeight) {
   if (walkers.length >= MAX_CATS) return;
 
-  const goRight = Math.random() > 0.5;
   const speed = CAT_SPEED_MIN + Math.random() * (CAT_SPEED_MAX - CAT_SPEED_MIN);
   const groundY = getGroundY(canvasHeight);
 
   walkers.push({
     base: pickRandomBase(),
     accessories: Math.random() < 1/3 ? pickRandomAccessories(1, 1) : pickRandomAccessories(0, 0),
-    x: goRight ? -DISPLAY_SIZE : canvasWidth + DISPLAY_SIZE,
+    x: -DISPLAY_SIZE,
     y: groundY - DISPLAY_SIZE + 4,
-    speed: goRight ? speed : -speed,
-    flipped: !goRight,
+    speed: speed,
+    flipped: false,
     bobOffset: Math.random() * 1000,
     clicked: false,
   });
