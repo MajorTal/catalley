@@ -2,6 +2,7 @@
 
 let audio = null;
 let musicVolume = 0.3;
+let paused = false;
 
 export function initMusic() {
   audio = new Audio('sfx/background.wav');
@@ -11,9 +12,9 @@ export function initMusic() {
   // Try to play immediately; if browser blocks, fall back to first interaction
   audio.play().catch(() => {
     const unlock = () => {
-      audio.play().catch(() => {});
       document.removeEventListener('click', unlock);
       document.removeEventListener('keydown', unlock);
+      if (!paused) audio.play().catch(() => {});
     };
     document.addEventListener('click', unlock);
     document.addEventListener('keydown', unlock);
@@ -30,10 +31,12 @@ export function getMusicVolume() {
 }
 
 export function pauseMusic() {
+  paused = true;
   if (audio) audio.pause();
 }
 
 export function resumeMusic() {
+  paused = false;
   if (audio) audio.play().catch(() => {});
 }
 
@@ -45,5 +48,5 @@ export function replaceMusic(blobUrl) {
   audio = new Audio(blobUrl);
   audio.loop = true;
   audio.volume = musicVolume;
-  audio.play().catch(() => {});
+  if (!paused) audio.play().catch(() => {});
 }
