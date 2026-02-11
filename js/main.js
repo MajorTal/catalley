@@ -4,6 +4,7 @@ import { loadState } from './state.js';
 import { startStreet, stopStreet, resumeStreet } from './cat-walker.js';
 import { renderGallery, initGalleryActions, updateStats } from './gallery.js';
 import { initMusic, replaceMusic, pauseMusic, resumeMusic } from './music.js';
+import { VERSION } from './version.js';
 
 // ===== Toast System =====
 export function showToast(message) {
@@ -60,6 +61,7 @@ function init() {
   initGalleryActions();
   updateStats();
   initMusic();
+  document.getElementById('version-tag').textContent = 'v' + VERSION;
 
   // Listen for music from the embedded editor
   window.addEventListener('message', (e) => {

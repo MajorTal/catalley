@@ -52,6 +52,13 @@ canvas { image-rendering: pixelated; }
   white-space: nowrap;
 }
 
+.version-tag {
+  font-size: 7px;
+  color: var(--text-dim);
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
 .nav-links { display: flex; gap: 4px; margin-left: 16px; }
 
 .nav-btn {
