@@ -4,7 +4,10 @@ A pixel-art browser game served as static files (no build step locally).
 
 ## Deployment
 
-Push to `main` → automatically deployed to **cats.yuval.nl** via AWS Amplify.
+Push to `main` → automatically deployed via AWS Amplify:
+
+- **cats.yuval.nl** — the game (served from repo root)
+- **yuval.nl** — landing page (served from `landing/`)
 
 That's it — just `git push`. No AWS account or console access needed.
 
