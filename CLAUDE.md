@@ -7,6 +7,7 @@ A pixel-art browser game served as static files (no build step locally).
 Push to `main` → automatically deployed via AWS Amplify:
 
 - **cats.yuval.nl** — the game (served from repo root)
+- **dog.yuval.nl** — Dog Dash game (served from `dogdash/`)
 - **yuval.nl** — landing page (served from `landing/`)
 
 That's it — just `git push`. No AWS account or console access needed.
