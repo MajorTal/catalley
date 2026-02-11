@@ -32,12 +32,18 @@ export function getMusicVolume() {
 
 export function pauseMusic() {
   paused = true;
-  if (audio) audio.pause();
+  if (audio) {
+    audio.pause();
+    audio.volume = 0;
+  }
 }
 
 export function resumeMusic() {
   paused = false;
-  if (audio) audio.play().catch(() => {});
+  if (audio) {
+    audio.volume = musicVolume;
+    audio.play().catch(() => {});
+  }
 }
 
 export function replaceMusic(blobUrl) {
@@ -47,6 +53,6 @@ export function replaceMusic(blobUrl) {
   }
   audio = new Audio(blobUrl);
   audio.loop = true;
-  audio.volume = musicVolume;
+  audio.volume = paused ? 0 : musicVolume;
   if (!paused) audio.play().catch(() => {});
 }
