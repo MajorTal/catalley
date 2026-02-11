@@ -45,6 +45,15 @@ canvas { image-rendering: pixelated; }
   position: relative;
 }
 
+.nav-back {
+  font-size: 18px;
+  color: var(--text-dim);
+  text-decoration: none;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.nav-back:hover { color: var(--accent); }
+
 .nav-title {
   font-size: 14px;
   color: var(--accent);
