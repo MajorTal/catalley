@@ -10,76 +10,116 @@ const B = 40; // block size
 const GROUND_Y = H - 80;
 const GRAV = 0.7;
 const JUMP = -12;
-const PAD_JUMP = -18;
+const PAD_JUMP = -20;
 const SPEED = 5;
 const DOG = 36;
 const DOG_OFF = (B - DOG) / 2;
 
+// --- SEEDED RNG (mulberry32) ---
+let rngState = 0;
+function seedRng(s) { rngState = s | 0; }
+function rng() {
+  rngState |= 0; rngState = rngState + 0x6D2B79F5 | 0;
+  let t = Math.imul(rngState ^ rngState >>> 15, 1 | rngState);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+function rngInt(min, max) { return min + Math.floor(rng() * (max - min + 1)); }
+function rngPick(arr) { return arr[Math.floor(rng() * arr.length)]; }
+
 // --- PROCEDURAL LEVEL GENERATION ---
 let world = [];
 let gapSet = new Set();
-let generatedUpTo = 0; // rightmost column generated so far
-const CHUNK_SIZE = 40; // generate 40 columns at a time
-const GEN_AHEAD = 30;  // generate when player is within 30 cols of edge
-const SAFE_ZONE = 10;  // no obstacles in first 10 columns
+let generatedUpTo = 0;
+let nextFreeCol = 0;
+const CHUNK_SIZE = 40;
+const GEN_AHEAD = 30;
+const SAFE_ZONE = 12; // breathing room at start
 
 function getDifficulty(col) {
-  // Ramps from 0 to 1 over ~400 columns
-  return Math.min(1, col / 400);
+  return Math.min(1, col / 500);
 }
 
+// GD-style patterns: each returns column count used
+// s=spike, b=block, p=pad, g=gap, _=empty
+// Patterns defined as arrays of [offset, type]
+const PATTERNS = {
+  // --- Easy (difficulty 0-0.3) ---
+  single_spike:     { d: [0, 0.5], fn: c => { sp(c); return 4; } },
+  double_spike:     { d: [0, 0.6], fn: c => { sp(c); sp(c+1); return 5; } },
+  triple_spike:     { d: [0.15, 0.7], fn: c => { sp(c); sp(c+1); sp(c+2); return 6; } },
+  spaced_spikes:    { d: [0, 0.6], fn: c => { sp(c); sp(c+3); return 7; } },
+
+  // --- Medium (difficulty 0.2-0.7) ---
+  spike_block_spike:{ d: [0.2, 0.8], fn: c => { sp(c); const h = rngInt(1,2); bl(c+2,h); bl(c+3,h); sp(c+5); return 9; } },
+  platform_jump:    { d: [0.15, 0.7], fn: c => { const h = rngInt(1,2); bl(c,h); bl(c+1,h); bl(c+2,h); return 7; } },
+  block_step:       { d: [0.2, 0.8], fn: c => { const h = rngInt(1,2); bl(c,h); bl(c+1,h); sp(c+3); sp(c+4); return 8; } },
+  gap_jump:         { d: [0.2, 0.9], fn: c => { gap(c); gap(c+1); return 6; } },
+  gap_spike:        { d: [0.3, 0.9], fn: c => { gap(c); gap(c+1); sp(c+4); return 8; } },
+  wall_hop:         { d: [0.2, 0.8], fn: c => { const h1 = rngInt(1,2); const h2 = rngInt(1,2); bl(c,h1); bl(c+4,h2); return 8; } },
+  step_up:          { d: [0.2, 0.7], fn: c => { bl(c); bl(c+1); bl(c+3,2); bl(c+4,2); return 8; } },
+  l_shape:          { d: [0.2, 0.8], fn: c => { bl(c,2); bl(c+1); bl(c+2); return 6; } },
+  r_shape:          { d: [0.2, 0.8], fn: c => { bl(c); bl(c+1); bl(c+2,2); return 6; } },
+
+  // --- Hard (difficulty 0.4-1.0) ---
+  pad_spike_run:    { d: [0.35, 1], fn: c => { pd(c); const n = rngInt(2,4); for(let i=1;i<=n;i++) sp(c+i); return n+4; } },
+  quad_spike:       { d: [0.4, 1], fn: c => { sp(c); sp(c+1); sp(c+2); sp(c+3); return 8; } },
+  spike_gap_spike:  { d: [0.35, 1], fn: c => { sp(c); gap(c+4); gap(c+5); sp(c+8); return 12; } },
+  block_gap:        { d: [0.3, 1], fn: c => { const h = rngInt(1,2); bl(c,h); bl(c+1,h); gap(c+3); gap(c+4); return 9; } },
+  pad_long_run:     { d: [0.5, 1], fn: c => { pd(c); for(let i=1;i<=4;i++) sp(c+i); return 9; } },
+  double_gap:       { d: [0.45, 1], fn: c => { gap(c); gap(c+1); gap(c+6); gap(c+7); return 12; } },
+  staircase_up:     { d: [0.3, 0.9], fn: c => { bl(c); bl(c+2,2); return 7; } },
+  staircase_down:   { d: [0.3, 0.9], fn: c => { bl(c,2); bl(c+2); return 7; } },
+  tower_jump:       { d: [0.35, 1], fn: c => { bl(c,2); sp(c+2); sp(c+3); bl(c+5,2); return 9; } },
+  step_down:        { d: [0.3, 0.9], fn: c => { bl(c,2); bl(c+1,2); bl(c+3); return 7; } },
+  pillar_hop:       { d: [0.4, 1], fn: c => { const h = [rngInt(1,2),rngInt(1,2),rngInt(1,2)]; bl(c,h[0]); sp(c+2); bl(c+4,h[1]); sp(c+6); bl(c+8,h[2]); return 12; } },
+  pyramid:          { d: [0.3, 0.9], fn: c => { bl(c); bl(c+1,2); bl(c+2,2); bl(c+3); return 7; } },
+  valley:           { d: [0.35, 1], fn: c => { bl(c,2); bl(c+1); bl(c+3); bl(c+4,2); return 8; } },
+  u_shape:          { d: [0.3, 0.9], fn: c => { bl(c,2); bl(c+1); bl(c+2); bl(c+3); bl(c+4,2); return 8; } },
+  overhang:         { d: [0.35, 1], fn: c => { bl(c,2); bl(c+1,2); bl(c+2,2); return 7; } },
+
+  // --- Expert (difficulty 0.6+) ---
+  spike_corridor:   { d: [0.6, 1], fn: c => { sp(c); sp(c+1); sp(c+2); sp(c+3); sp(c+4); return 9; } },
+  gap_block_gap:    { d: [0.55, 1], fn: c => { gap(c); gap(c+1); const h = rngInt(1,2); bl(c+3,h); bl(c+4,h); gap(c+6); gap(c+7); return 12; } },
+  pad_gap:          { d: [0.5, 1], fn: c => { pd(c); gap(c+3); gap(c+4); return 9; } },
+  tower_gap:        { d: [0.6, 1], fn: c => { bl(c,2); bl(c+1,2); gap(c+3); gap(c+4); bl(c+6,2); bl(c+7,2); return 11; } },
+  skybridge:        { d: [0.55, 1], fn: c => { bl(c,2); bl(c+1,2); bl(c+2,2); sp(c+4); bl(c+6,2); bl(c+7,2); return 11; } },
+  zigzag:           { d: [0.6, 1], fn: c => { bl(c); bl(c+2,2); bl(c+4,2); bl(c+6); return 10; } },
+  fortress:         { d: [0.65, 1], fn: c => { bl(c,2); bl(c+1); bl(c+2); bl(c+3); bl(c+4,2); sp(c+6); sp(c+7); return 11; } },
+};
+
+// Helpers for pattern definitions
+// h = height in blocks above ground (1 = ground level, 2 = stacked, etc.)
+function sp(c) { world.push({ t: 's', x: c * B, y: GROUND_Y - B }); }
+function bl(c, h) {
+  h = h || 1;
+  for (let i = 0; i < h; i++) {
+    world.push({ t: 'b', x: c * B, y: GROUND_Y - (i + 1) * B });
+  }
+}
+function pd(c) { world.push({ t: 'p', x: c * B, y: GROUND_Y - B }); }
+function gap(c) { gapSet.add(c); }
+
 function generateChunk(startCol, endCol) {
-  const d = getDifficulty(startCol);
-  let col = startCol;
+  let col = Math.max(startCol, nextFreeCol);
 
   while (col < endCol) {
     if (col < SAFE_ZONE) { col++; continue; }
 
-    const roll = Math.random();
+    const d = getDifficulty(col);
 
-    // Gap spacing decreases with difficulty
-    const minGap = Math.max(2, Math.floor(6 - d * 4));
-    const maxGap = Math.max(3, Math.floor(10 - d * 5));
-    const spacing = minGap + Math.floor(Math.random() * (maxGap - minGap + 1));
+    // Filter patterns valid for current difficulty
+    const valid = Object.values(PATTERNS).filter(p => d >= p.d[0] && d <= p.d[1]);
+    const pattern = valid[Math.floor(rng() * valid.length)];
 
-    if (roll < 0.05 + d * 0.1) {
-      // Gap (pit) — 2-3 columns wide
-      const gapW = Math.random() < 0.3 + d * 0.2 ? 3 : 2;
-      for (let i = 0; i < gapW; i++) gapSet.add(col + i);
-      // Sometimes add spikes after gap
-      if (d > 0.3 && Math.random() < d * 0.5) {
-        world.push({ t: 's', x: (col + gapW + 1) * B, y: GROUND_Y - B });
-      }
-      col += gapW + spacing;
-    } else if (roll < 0.15 + d * 0.1) {
-      // Block platform — 2-3 blocks
-      const bw = 2 + Math.floor(Math.random() * 2);
-      for (let i = 0; i < bw; i++) {
-        world.push({ t: 'b', x: (col + i) * B, y: GROUND_Y - B });
-      }
-      // Spike after blocks
-      if (Math.random() < 0.4 + d * 0.3) {
-        world.push({ t: 's', x: (col + bw + 1) * B, y: GROUND_Y - B });
-      }
-      col += bw + spacing;
-    } else if (roll < 0.2 + d * 0.05 && d > 0.2) {
-      // Pad with spike run
-      world.push({ t: 'p', x: col * B, y: GROUND_Y - B });
-      const spikeRun = 2 + Math.floor(d * 4 * Math.random());
-      for (let i = 1; i <= spikeRun; i++) {
-        world.push({ t: 's', x: (col + i) * B, y: GROUND_Y - B });
-      }
-      col += spikeRun + spacing + 1;
-    } else {
-      // Spike cluster — 1 to 3 spikes depending on difficulty
-      const count = 1 + Math.floor(Math.random() * (1 + d * 2));
-      for (let i = 0; i < count; i++) {
-        world.push({ t: 's', x: (col + i) * B, y: GROUND_Y - B });
-      }
-      col += count + spacing;
-    }
+    // Breathing room: 3-5 columns between patterns, less at higher difficulty
+    const breath = rngInt(Math.max(2, Math.floor(4 - d * 2)), Math.max(3, Math.floor(6 - d * 3)));
+
+    const used = pattern.fn(col);
+    col += used + breath;
   }
 
+  nextFreeCol = col;
   generatedUpTo = endCol;
 }
 
@@ -92,7 +132,6 @@ function ensureGenerated(playerCol) {
 function cleanupBehind(playerCol) {
   const cutoff = (playerCol - 60) * B;
   world = world.filter(o => o.x > cutoff);
-  // Clean gapSet of old columns
   for (const c of gapSet) {
     if (c < playerCol - 60) gapSet.delete(c);
   }
@@ -159,6 +198,8 @@ function reset(full) {
     world = [];
     gapSet = new Set();
     generatedUpTo = 0;
+    nextFreeCol = 0;
+    seedRng(12345);
     ensureGenerated(0);
   }
 }
@@ -166,6 +207,8 @@ reset(true);
 
 // --- INPUT ---
 let pressed = false;
+let held = false;
+let jumpBuffer = 0; // frames remaining to accept a buffered jump
 
 function onDown(e) {
   if (e) e.preventDefault();
@@ -179,7 +222,13 @@ function onDown(e) {
     reset(true);
   } else if (state === 'playing') {
     pressed = true;
+    held = true;
+    jumpBuffer = 8;
   }
+}
+
+function onUp(e) {
+  held = false;
 }
 
 document.addEventListener('keydown', e => {
@@ -187,8 +236,13 @@ document.addEventListener('keydown', e => {
     if (!e.repeat) onDown(e);
   }
 });
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') onUp(e);
+});
 canvas.addEventListener('mousedown', onDown);
+canvas.addEventListener('mouseup', onUp);
 canvas.addEventListener('touchstart', onDown, { passive: false });
+canvas.addEventListener('touchend', onUp);
 
 // --- PARTICLES ---
 function spawnDeath(x, y) {
@@ -264,7 +318,7 @@ function update() {
       dog.grounded = true;
       if (dog.prevY + DOG < GROUND_Y - 2) { dog.sq = 1.2; dog.st = 0.8; }
     }
-  } else if (dog.y > H + 50) { die(); return; }
+  } else if (dog.y + DOG > GROUND_Y + B) { die(); return; }
 
   // Block collisions
   const hb = dogHB();
@@ -284,18 +338,20 @@ function update() {
   }
 
   // Jump (after collision so grounded is correct for blocks)
-  if (pressed && dog.grounded) {
+  if (jumpBuffer > 0) jumpBuffer--;
+  if ((pressed || jumpBuffer > 0 || held) && dog.grounded) {
     dog.vy = JUMP;
     dog.grounded = false;
     dog.sq = 0.7; dog.st = 1.3;
     snd('jump');
+    jumpBuffer = 0;
   }
   pressed = false;
 
   // Spike collisions
   for (const o of world) {
     if (o.t !== 's' || Math.abs(o.x - dog.x) > B*2) continue;
-    if (ov(hb, { x: o.x+10, y: o.y+5, w: 20, h: 35 })) { die(); return; }
+    if (ov(hb, { x: o.x+14, y: o.y+10, w: 12, h: 26 })) { die(); return; }
   }
 
   // Pad collisions
@@ -319,7 +375,7 @@ function update() {
   // Camera
   cam = Math.max(0, dog.x - 200);
 
-  if (dog.y > H + 100) die();
+  if (dog.y > GROUND_Y + B) die();
 
   // Update score
   score = Math.floor(dog.x / B);
