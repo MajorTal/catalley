@@ -15,6 +15,17 @@
       overflow: hidden;
       font-family: 'Segoe UI', Arial, sans-serif;
     }
+    .back-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      font-size: 18px;
+      color: #888;
+      text-decoration: none;
+      z-index: 100;
+      transition: color 0.15s;
+    }
+    .back-btn:hover { color: #4ade80; }
     canvas {
       border-radius: 8px;
       box-shadow: 0 0 40px rgba(74, 222, 128, 0.15);
@@ -25,6 +36,7 @@
   </style>
 </head>
 <body>
+  <a href="https://yuval.nl" class="back-btn" title="Back to yuval.nl">&larr;</a>
   <canvas id="game" width="800" height="500"></canvas>
   <script src="game.js"></script>
 </body>
