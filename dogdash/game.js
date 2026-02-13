@@ -1,5 +1,5 @@
 // ==============================================
-// DOG DASH - Phase 1
+// DOG DASH - Infinite Mode
 // ==============================================
 (() => {
 'use strict';
@@ -15,56 +15,88 @@ const SPEED = 5;
 const DOG = 36;
 const DOG_OFF = (B - DOG) / 2;
 
-// --- LEVEL DATA ---
-function sp(x, y) { return { t: 's', x, y: y || 0 }; }
-function bl(x, y) { return { t: 'b', x, y: y || 0 }; }
-function pd(x) { return { t: 'p', x, y: 0 }; }
+// --- PROCEDURAL LEVEL GENERATION ---
+let world = [];
+let gapSet = new Set();
+let generatedUpTo = 0; // rightmost column generated so far
+const CHUNK_SIZE = 40; // generate 40 columns at a time
+const GEN_AHEAD = 30;  // generate when player is within 30 cols of edge
+const SAFE_ZONE = 10;  // no obstacles in first 10 columns
 
-const GAPS = [[50,52],[72,74],[124,126],[148,150],[188,190]];
-const gapSet = new Set();
-GAPS.forEach(([a, b]) => { for (let i = a; i <= b; i++) gapSet.add(i); });
+function getDifficulty(col) {
+  // Ramps from 0 to 1 over ~400 columns
+  return Math.min(1, col / 400);
+}
 
-const FINISH = 218;
-const OBJS = [
-  // Phrase 1: Intro
-  sp(14), sp(19), sp(23),
-  // Phrase 2: Multi-spikes
-  sp(28), sp(29), sp(34), sp(35),
-  sp(40), sp(41), sp(42),
-  // Phrase 3: First gap
-  sp(56),
-  // Phrase 4: Blocks
-  bl(62), bl(63), bl(64), sp(68), sp(78),
-  // Phrase 5: Rhythms
-  sp(82), sp(85), sp(88),
-  sp(93), sp(94), sp(95),
-  sp(99), sp(100),
-  // Phrase 6: Pad intro
-  pd(108), sp(109), sp(110), sp(111), sp(112),
-  sp(120),
-  // Phrase 7: Advanced
-  sp(130),
-  bl(133), bl(134), bl(135),
-  sp(139), sp(142), sp(143),
-  sp(154),
-  // Phrase 8: Big pad
-  pd(157),
-  sp(158), sp(159), sp(160), sp(161), sp(162),
-  sp(168), sp(172), sp(173),
-  // Finale
-  sp(180), sp(182), sp(184),
-  sp(194),
-  pd(199),
-  sp(200), sp(201), sp(202), sp(203), sp(204),
-  bl(209), bl(210), bl(211),
-];
+function generateChunk(startCol, endCol) {
+  const d = getDifficulty(startCol);
+  let col = startCol;
 
-// Precompute world positions
-const world = OBJS.map(o => ({
-  t: o.t,
-  x: o.x * B,
-  y: GROUND_Y - (o.y + 1) * B,
-}));
+  while (col < endCol) {
+    if (col < SAFE_ZONE) { col++; continue; }
+
+    const roll = Math.random();
+
+    // Gap spacing decreases with difficulty
+    const minGap = Math.max(2, Math.floor(6 - d * 4));
+    const maxGap = Math.max(3, Math.floor(10 - d * 5));
+    const spacing = minGap + Math.floor(Math.random() * (maxGap - minGap + 1));
+
+    if (roll < 0.05 + d * 0.1) {
+      // Gap (pit) — 2-3 columns wide
+      const gapW = Math.random() < 0.3 + d * 0.2 ? 3 : 2;
+      for (let i = 0; i < gapW; i++) gapSet.add(col + i);
+      // Sometimes add spikes after gap
+      if (d > 0.3 && Math.random() < d * 0.5) {
+        world.push({ t: 's', x: (col + gapW + 1) * B, y: GROUND_Y - B });
+      }
+      col += gapW + spacing;
+    } else if (roll < 0.15 + d * 0.1) {
+      // Block platform — 2-3 blocks
+      const bw = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < bw; i++) {
+        world.push({ t: 'b', x: (col + i) * B, y: GROUND_Y - B });
+      }
+      // Spike after blocks
+      if (Math.random() < 0.4 + d * 0.3) {
+        world.push({ t: 's', x: (col + bw + 1) * B, y: GROUND_Y - B });
+      }
+      col += bw + spacing;
+    } else if (roll < 0.2 + d * 0.05 && d > 0.2) {
+      // Pad with spike run
+      world.push({ t: 'p', x: col * B, y: GROUND_Y - B });
+      const spikeRun = 2 + Math.floor(d * 4 * Math.random());
+      for (let i = 1; i <= spikeRun; i++) {
+        world.push({ t: 's', x: (col + i) * B, y: GROUND_Y - B });
+      }
+      col += spikeRun + spacing + 1;
+    } else {
+      // Spike cluster — 1 to 3 spikes depending on difficulty
+      const count = 1 + Math.floor(Math.random() * (1 + d * 2));
+      for (let i = 0; i < count; i++) {
+        world.push({ t: 's', x: (col + i) * B, y: GROUND_Y - B });
+      }
+      col += count + spacing;
+    }
+  }
+
+  generatedUpTo = endCol;
+}
+
+function ensureGenerated(playerCol) {
+  while (playerCol + GEN_AHEAD > generatedUpTo) {
+    generateChunk(generatedUpTo, generatedUpTo + CHUNK_SIZE);
+  }
+}
+
+function cleanupBehind(playerCol) {
+  const cutoff = (playerCol - 60) * B;
+  world = world.filter(o => o.x > cutoff);
+  // Clean gapSet of old columns
+  for (const c of gapSet) {
+    if (c < playerCol - 60) gapSet.delete(c);
+  }
+}
 
 // --- CANVAS ---
 const canvas = document.getElementById('game');
@@ -102,26 +134,14 @@ function snd(type) {
     g.gain.setValueAtTime(0.15, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
     o.start(t); o.stop(t + 0.2);
-  } else if (type === 'win') {
-    [523, 659, 784, 1047].forEach((f, i) => {
-      const o2 = ac.createOscillator();
-      const g2 = ac.createGain();
-      o2.connect(g2); g2.connect(ac.destination);
-      o2.type = 'sine';
-      o2.frequency.setValueAtTime(f, t + i * 0.12);
-      g2.gain.setValueAtTime(0.12, t + i * 0.12);
-      g2.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.3);
-      o2.start(t + i * 0.12); o2.stop(t + i * 0.12 + 0.3);
-    });
-    o.type = 'sine'; o.frequency.setValueAtTime(1, t);
-    g.gain.setValueAtTime(0, t);
-    o.start(t); o.stop(t + 0.01);
   }
 }
 
 // --- STATE ---
 let state = 'start';
-let dog, cam, attempt, particles, deadTimer, frame, shake;
+let dog, cam, attempt, particles, deadTimer, frame, shake, score, bestScore;
+
+bestScore = parseInt(localStorage.getItem('dogdash_best') || '0', 10);
 
 function reset(full) {
   dog = {
@@ -133,7 +153,14 @@ function reset(full) {
   deadTimer = 0;
   frame = 0;
   shake = 0;
-  if (full) attempt = 1;
+  score = 0;
+  if (full) {
+    attempt = 1;
+    world = [];
+    gapSet = new Set();
+    generatedUpTo = 0;
+    ensureGenerated(0);
+  }
 }
 reset(true);
 
@@ -149,9 +176,6 @@ function onDown(e) {
   } else if (state === 'dead' && deadTimer > 30) {
     state = 'playing';
     attempt++;
-    reset();
-  } else if (state === 'complete') {
-    state = 'playing';
     reset(true);
   } else if (state === 'playing') {
     pressed = true;
@@ -197,6 +221,11 @@ function die() {
   shake = 8;
   spawnDeath(dog.x + DOG/2, dog.y + DOG/2);
   snd('death');
+  score = Math.floor(dog.x / B);
+  if (score > bestScore) {
+    bestScore = score;
+    localStorage.setItem('dogdash_best', String(bestScore));
+  }
 }
 
 // --- UPDATE ---
@@ -214,6 +243,11 @@ function update() {
 
   frame++;
   dog.prevY = dog.y;
+
+  // Generate terrain ahead & clean behind
+  const playerCol = Math.floor(dog.x / B);
+  ensureGenerated(playerCol);
+  if (playerCol % 20 === 0) cleanupBehind(playerCol);
 
   // Jump
   if (pressed && dog.grounded) {
@@ -280,9 +314,10 @@ function update() {
   // Camera
   cam = Math.max(0, dog.x - 200);
 
-  // Win
-  if (dog.x >= FINISH * B) { state = 'complete'; snd('win'); }
   if (dog.y > H + 100) die();
+
+  // Update score
+  score = Math.floor(dog.x / B);
 
   // Particles
   for (let i = particles.length-1; i >= 0; i--) {
@@ -293,14 +328,17 @@ function update() {
 }
 
 // --- BACKGROUND DATA ---
-const stars = Array.from({length: 100}, () => ({
-  x: Math.random() * FINISH * B * 1.5,
+// Stars and mountains repeat every WRAP_W pixels
+const STAR_WRAP = 1600;
+const MTN_WRAP = 2400;
+const stars = Array.from({length: 60}, () => ({
+  x: Math.random() * STAR_WRAP,
   y: Math.random() * (GROUND_Y - 50) + 10,
   s: Math.random() * 2 + 0.5,
   b: Math.random() * 0.5 + 0.2,
 }));
-const mtns = Array.from({length: 30}, (_, i) => ({
-  x: i * 300 + Math.random() * 100,
+const mtns = Array.from({length: 12}, (_, i) => ({
+  x: i * 200 + Math.random() * 100,
   w: 150 + Math.random() * 200,
   h: 80 + Math.random() * 120,
 }));
@@ -334,21 +372,25 @@ function render() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, GROUND_Y);
 
-  // Stars
+  // Stars (wrapping)
+  const starOffset = (cam * 0.05) % STAR_WRAP;
   for (const s of stars) {
-    const sx2 = s.x - cam * 0.05;
-    if (sx2 < -5 || sx2 > W+5) continue;
+    let sx2 = s.x - starOffset;
+    if (sx2 < -5) sx2 += STAR_WRAP;
+    if (sx2 > W + 5) continue;
     ctx.globalAlpha = s.b + Math.sin(frame*0.03+s.x)*0.15;
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(sx2, s.y, s.s, 0, Math.PI*2); ctx.fill();
   }
   ctx.globalAlpha = 1;
 
-  // Mountains
+  // Mountains (wrapping)
   ctx.fillStyle = '#12122a';
+  const mtnOffset = (cam * 0.2) % MTN_WRAP;
   for (const m of mtns) {
-    const mx = m.x - cam*0.2;
-    if (mx+m.w < 0 || mx > W) continue;
+    let mx = m.x - mtnOffset;
+    if (mx + m.w < 0) mx += MTN_WRAP;
+    if (mx > W) continue;
     ctx.beginPath();
     ctx.moveTo(mx, GROUND_Y);
     ctx.lineTo(mx+m.w/2, GROUND_Y-m.h);
@@ -360,7 +402,15 @@ function render() {
   for (let sx3 = -B; sx3 <= W+B; sx3 += B) {
     const c = Math.floor((sx3 + cam) / B);
     const dx = c * B - cam;
-    if (gapSet.has(c)) continue;
+    if (gapSet.has(c)) {
+      // Draw pit: red glow at top, dark fade below
+      const pitGrad = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + 40);
+      pitGrad.addColorStop(0, 'rgba(255,50,50,0.25)');
+      pitGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = pitGrad;
+      ctx.fillRect(dx, GROUND_Y, B, 40);
+      continue;
+    }
     ctx.fillStyle = '#2d1b0e';
     ctx.fillRect(dx, GROUND_Y, B, H-GROUND_Y);
     ctx.fillStyle = '#3d2b1e';
@@ -371,6 +421,21 @@ function render() {
     for (let gx = 0; gx < B; gx += 8) {
       const bh = 4 + Math.sin(c*3+gx)*3;
       ctx.fillRect(dx+gx, GROUND_Y-bh, 2, bh);
+    }
+    // Warning stripes on edges next to gaps
+    if (gapSet.has(c + 1)) {
+      // Right edge — yellow/black caution stripe
+      for (let sy2 = 0; sy2 < 12; sy2 += 4) {
+        ctx.fillStyle = sy2 % 8 === 0 ? '#ddaa00' : '#333';
+        ctx.fillRect(dx + B - 3, GROUND_Y + sy2, 3, 4);
+      }
+    }
+    if (gapSet.has(c - 1)) {
+      // Left edge
+      for (let sy2 = 0; sy2 < 12; sy2 += 4) {
+        ctx.fillStyle = sy2 % 8 === 0 ? '#ddaa00' : '#333';
+        ctx.fillRect(dx, GROUND_Y + sy2, 3, 4);
+      }
     }
   }
 
@@ -502,27 +567,15 @@ function render() {
   }
   ctx.globalAlpha = 1;
 
-  // --- UI ---
-  // Progress bar
-  const progress = Math.min(1, Math.max(0, (dog ? dog.x : 0) / (FINISH * B)));
-  ctx.fillStyle = '#333';
-  ctx.fillRect(20, 15, W-40, 6);
-  ctx.fillStyle = '#4ade80';
-  ctx.fillRect(20, 15, (W-40) * progress, 6);
-  // Progress dot
-  ctx.beginPath();
-  ctx.arc(20 + (W-40)*progress, 18, 5, 0, Math.PI*2);
-  ctx.fill();
-
-  // Attempt counter
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '14px "Segoe UI", Arial, sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText('Attempt ' + attempt, W-25, 42);
-
-  // Percentage
+  // --- HUD ---
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '16px "Segoe UI", Arial, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(Math.floor(progress * 100) + '%', 25, 42);
+  ctx.fillText('Score: ' + score, 25, 30);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '14px "Segoe UI", Arial, sans-serif';
+  ctx.fillText('Best: ' + bestScore, W - 25, 30);
 
   ctx.restore(); // shake
 
@@ -535,50 +588,49 @@ function render() {
     ctx.font = 'bold 64px "Segoe UI", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('DOG DASH', W/2, H/2 - 50);
-    // Subtitle paw prints
+    // Subtitle
     ctx.fillStyle = '#fff';
     ctx.font = '20px "Segoe UI", Arial, sans-serif';
     ctx.fillText('Press SPACE or Tap to Start', W/2, H/2 + 10);
-    // Bouncing dog hint
+    // Hint
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = '14px "Segoe UI", Arial, sans-serif';
-    ctx.fillText('Jump over obstacles to reach the end!', W/2, H/2 + 45);
+    ctx.fillText('Jump over obstacles — how far can you go?', W/2, H/2 + 45);
+    // Best score
+    if (bestScore > 0) {
+      ctx.fillStyle = '#ffd700';
+      ctx.font = '16px "Segoe UI", Arial, sans-serif';
+      ctx.fillText('Best: ' + bestScore, W/2, H/2 + 75);
+    }
     // Mini dog icon
     const by = H/2 - 120 + Math.sin(Date.now()*0.004)*10;
     drawMiniDog(W/2 - 25, by, 50);
   }
   else if (state === 'dead') {
     if (deadTimer > 30) {
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#ff4444';
       ctx.font = 'bold 36px "Segoe UI", Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Woof!', W/2, H/2 - 10);
+      ctx.fillText('Woof!', W/2, H/2 - 40);
+      // Score
       ctx.fillStyle = '#fff';
+      ctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
+      ctx.fillText('Score: ' + score, W/2, H/2 + 5);
+      // Best
+      ctx.fillStyle = '#ffd700';
       ctx.font = '18px "Segoe UI", Arial, sans-serif';
-      ctx.fillText('Tap or press SPACE to retry', W/2, H/2 + 30);
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '14px "Segoe UI", Arial, sans-serif';
-      ctx.fillText(Math.floor(progress * 100) + '% complete', W/2, H/2 + 60);
+      if (score >= bestScore && score > 0) {
+        ctx.fillText('New Best!', W/2, H/2 + 35);
+      } else {
+        ctx.fillText('Best: ' + bestScore, W/2, H/2 + 35);
+      }
+      // Retry
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '16px "Segoe UI", Arial, sans-serif';
+      ctx.fillText('Tap or press SPACE to retry', W/2, H/2 + 70);
     }
-  }
-  else if (state === 'complete') {
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#4ade80';
-    ctx.font = 'bold 48px "Segoe UI", Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Level Complete!', W/2, H/2 - 40);
-    ctx.fillStyle = '#ffd700';
-    ctx.font = '22px "Segoe UI", Arial, sans-serif';
-    ctx.fillText('Attempts: ' + attempt, W/2, H/2 + 10);
-    ctx.fillStyle = '#fff';
-    ctx.font = '18px "Segoe UI", Arial, sans-serif';
-    ctx.fillText('Tap or press SPACE to play again', W/2, H/2 + 50);
-    // Victory dog
-    const vy = H/2 - 110 + Math.sin(Date.now()*0.005)*8;
-    drawMiniDog(W/2 - 20, vy, 40);
   }
 }
 
