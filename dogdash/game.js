@@ -249,15 +249,6 @@ function update() {
   ensureGenerated(playerCol);
   if (playerCol % 20 === 0) cleanupBehind(playerCol);
 
-  // Jump
-  if (pressed && dog.grounded) {
-    dog.vy = JUMP;
-    dog.grounded = false;
-    dog.sq = 0.7; dog.st = 1.3;
-    snd('jump');
-  }
-  pressed = false;
-
   // Move
   dog.x += SPEED;
   if (!dog.grounded) dog.vy += GRAV;
@@ -277,15 +268,29 @@ function update() {
 
   // Block collisions
   const hb = dogHB();
+  // Extended hitbox for grounding (a few px taller to detect standing on top)
+  const hbGround = { x: hb.x, y: hb.y, w: hb.w, h: hb.h + 6 };
   for (const o of world) {
     if (o.t !== 'b' || Math.abs(o.x - dog.x) > B*2) continue;
     const bb = { x: o.x, y: o.y, w: B, h: B };
-    if (!ov(hb, bb)) continue;
-    if (dog.prevY + DOG <= bb.y + 4) {
+    // Check landing/standing with extended hitbox
+    if (ov(hbGround, bb) && dog.vy >= 0 && dog.prevY + DOG <= bb.y + 10) {
       dog.y = bb.y - DOG; dog.vy = 0; dog.grounded = true;
-      dog.sq = 1.15; dog.st = 0.85;
-    } else { die(); return; }
+      if (dog.prevY + DOG < bb.y - 2) { dog.sq = 1.15; dog.st = 0.85; }
+    // Side collision only with real hitbox
+    } else if (ov(hb, bb) && dog.prevY + DOG > bb.y + 10) {
+      die(); return;
+    }
   }
+
+  // Jump (after collision so grounded is correct for blocks)
+  if (pressed && dog.grounded) {
+    dog.vy = JUMP;
+    dog.grounded = false;
+    dog.sq = 0.7; dog.st = 1.3;
+    snd('jump');
+  }
+  pressed = false;
 
   // Spike collisions
   for (const o of world) {
